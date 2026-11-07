@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/AxoVisuals.Core/AxoVisuals.Core.csproj" />
+    <Project Path="src/AxoVisuals/AxoVisuals.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/AxoVisuals.Tests/AxoVisuals.Tests.csproj" />
+  </Folder>
+</Solution>

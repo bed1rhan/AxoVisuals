@@ -1,0 +1,15 @@
+.tools/
+**/bin/
+**/obj/
+artifacts/
+TestResults/
+artifacts-tree.txt
+ersUserDocumentsChatGPTAxoVisuals*
+models/*.onnx
+.vs/
+*.user
+*.suo
+*.log
+*.pfx
+*.p12
+*.cer
