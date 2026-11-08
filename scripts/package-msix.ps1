@@ -1,4 +1,4 @@
-param([string]$Version='0.1.1.0',[switch]$Rebuild)
+param([string]$Version='1.2.0.0',[switch]$Rebuild)
 $ErrorActionPreference='Stop'
 $projectRoot=[IO.Path]::GetFullPath((Split-Path -Parent $PSScriptRoot))
 $portable=Join-Path $projectRoot 'artifacts/AxoVisuals-win-x64'

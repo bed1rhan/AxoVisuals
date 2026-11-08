@@ -73,6 +73,12 @@ public sealed class WorkspaceViewModel : IDisposable
         var options = Export;
         return await Task.Run(() => { token.ThrowIfCancellationRequested(); using var image = working != null ? (MagickImage)working.Clone() : ImagePipeline.Render(Document,Edits,token); return ImagePipeline.Encode(image,options); },token);
     }
+    public async Task<(byte[] Bytes, uint Quality, bool TargetReached)> EncodeToTargetAsync(long targetBytes, CancellationToken token = default)
+    {
+        if(Document == null) throw new InvalidOperationException("Open an image first.");
+        var options = Export;
+        return await Task.Run(() => { token.ThrowIfCancellationRequested(); using var image = working != null ? (MagickImage)working.Clone() : ImagePipeline.Render(Document,Edits,token); return ImagePipeline.EncodeToTarget(image,options,targetBytes); },token);
+    }
     public async Task<byte[]> FullPreviewAsync()
     {
         if(Document == null) throw new InvalidOperationException("Open an image first.");

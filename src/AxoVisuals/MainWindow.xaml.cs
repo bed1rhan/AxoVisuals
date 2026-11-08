@@ -21,7 +21,7 @@ public sealed partial class MainWindow : Window
         {
             BuildInspector(); var files = Environment.GetCommandLineArgs().Skip(1).Where(System.IO.File.Exists).ToArray();
             if(files.Length == 1) await RunAsync(() => OpenAsync(files[0]));
-            else if(files.Length > 1) { ToolList.SelectedIndex = 7; foreach(var file in files) AddBatchFile(file); }
+            else if(files.Length > 1) { ToolList.SelectedIndex = 9; foreach(var file in files) AddBatchFile(file); }
         };
     }
     private bool fitMode = true;
@@ -54,14 +54,14 @@ public sealed partial class MainWindow : Window
     private void FitClick(object sender, RoutedEventArgs e) { if(model.Document == null) return; fitMode = true; var scale = Math.Min(Math.Max(100,Viewport.ActualWidth-20)/model.Width, Math.Max(100,Viewport.ActualHeight-20)/model.Height); ImageSurface.Width = model.Width * scale; ImageSurface.Height = model.Height * scale; CropRectangle.Visibility = Visibility.Collapsed; crop = null; Viewport.ChangeView(0, 0, 1); UpdateZoomLabel(); }
     private async void ActualClick(object sender, RoutedEventArgs e) => await RunAsync(async () => { if (model.Document == null) return; await DisplayBytesAsync(await model.FullPreviewAsync()); fitMode = false; ImageSurface.Width = model.Width / Root.XamlRoot.RasterizationScale; ImageSurface.Height = model.Height / Root.XamlRoot.RasterizationScale; CropRectangle.Visibility = Visibility.Collapsed; crop = null; Viewport.ChangeView(0, 0, 1); UpdateZoomLabel(); });
     private void OnDragOver(object sender, DragEventArgs e) { if(e.DataView.Contains(StandardDataFormats.StorageItems)) e.AcceptedOperation = DataPackageOperation.Copy; }
-    private async void OnDrop(object sender, DragEventArgs e) => await RunAsync(async () => { var files = await e.DataView.GetStorageItemsAsync(); if(ToolList.SelectedIndex == 7 || files.Count > 1) { ToolList.SelectedIndex = 7; foreach(var file in files) AddBatchFile(file.Path); } else if (files.Count > 0) await OpenAsync(files[0].Path); });
+    private async void OnDrop(object sender, DragEventArgs e) => await RunAsync(async () => { var files = await e.DataView.GetStorageItemsAsync(); if(ToolList.SelectedIndex == 9 || files.Count > 1) { ToolList.SelectedIndex = 9; foreach(var file in files) AddBatchFile(file.Path); } else if (files.Count > 0) await OpenAsync(files[0].Path); });
     private void ToolChanged(object sender, SelectionChangedEventArgs e) { try { BuildInspector(); } catch(Exception ex) { Core.Infrastructure.Diagnostics.Record("inspector",ex); if(StatusText != null) StatusText.Text = Core.Infrastructure.UserErrors.Describe(ex); } }
     private async void ResetClick(object sender, RoutedEventArgs e) => await RunAsync(async () => { await model.ApplyAsync(null, true); await ShowPreviewAsync(); BuildInspector(); });
     private async void ExportClick(object sender, RoutedEventArgs e)
     {
         if(busy) return;
         if(model.Document == null) { StatusText.Text = "Open an image first."; return; }
-        if(ToolList.SelectedIndex != 4) { ToolList.SelectedIndex = 4; StatusText.Text = "Review output settings, then choose Export image."; }
+        if(ToolList.SelectedIndex != 6) { ToolList.SelectedIndex = 6; StatusText.Text = "Review output settings, then choose Export image."; }
         else await RunAsync(ExportAsync);
     }
 }
