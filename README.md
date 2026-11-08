@@ -33,6 +33,12 @@ Codec variants that are unavailable or malformed fail with a local error. Animat
 - PowerShell.
 - .NET SDK 10.0.401. The build scripts use a workspace-local `.tools/dotnet` SDK when present, otherwise the SDK on `PATH`.
 
+## Download & Run
+
+Download `AxoVisuals-0.1.1-win-x64.zip` and its `.sha256` checksum file from the [v0.1.1 release](https://github.com/bed1rhan/AxoVisuals/releases/tag/v0.1.1). Verify the checksum, extract the ZIP completely, then run `AxoVisuals.exe`.
+
+The portable package is self-contained and includes the .NET runtime, Windows App SDK runtime files, native codecs, license notices, and the verified U²-Net model. It does not require an installer, administrator permission, Visual Studio, or a .NET SDK. Keep the `models` and `licenses` folders beside the executable. The app runs offline after extraction.
+
 ## Build from source
 
 The U²-Net model is intentionally excluded from Git because it is a large binary. Download and verify it before building:
@@ -54,7 +60,7 @@ powershell -ExecutionPolicy Bypass -File scripts/test.ps1
 
 ## Packaging
 
-`scripts/package-msix.ps1` builds a self-contained MSIX for local development and validates its contents. It uses a locally generated test certificate, so its output is not a publicly trusted installer and is not attached to GitHub releases. Production distribution requires a certificate from a trusted code-signing provider and a separate signing/release process.
+`scripts/package-portable.ps1` produces the release ZIP and its SHA-256 checksum from the self-contained output. `scripts/package-msix.ps1` remains for local development only: it uses a locally generated test certificate and is not a public installer.
 
 ## Privacy
 

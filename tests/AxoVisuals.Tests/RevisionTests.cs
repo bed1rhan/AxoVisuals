@@ -49,6 +49,13 @@ internal static class RevisionTests
         Check(ImagePipeline.Formats.Count(f=>f.Format==MagickFormat.Jpeg)==1,"Duplicate JPEG");
         using(var doc=ImageDocument.Open(path)) { var jpeg=Path.Combine(root,"alias.jpeg"); await ImagePipeline.ExportAsync(doc,[],new("JPEG"),jpeg); using var check=ImageDocument.Open(jpeg); Check(check.Info.Width==640,"JPEG alias"); }
         Console.WriteLine("PASS: safe extra EXIF/IPTC/XMP edit/removal, unknown XMP retention, structural rejection, JPEG extension alias");
+        using(var missingModelImage = new MagickImage(MagickColors.Coral,32,32))
+        using(var backgroundService = new AxoVisuals.Core.AI.BackgroundRemovalService())
+        {
+            try { backgroundService.CreateMask(missingModelImage,Path.Combine(root,"missing-model.onnx")); throw new Exception("Missing model accepted"); }
+            catch(InvalidOperationException exception) when(exception.Message.Contains("bundled background model is missing",StringComparison.Ordinal)) { }
+        }
+        Console.WriteLine("PASS: missing background model reports a recoverable local error");
         // Same 6 MP textured pixels and command list for the old replay path and new cached path.
         var benchmark=Path.Combine(root,"benchmark.png");
         using(var sample=new MagickImage(MagickColors.Gray,3000,2000)) { sample.AddNoise(NoiseType.Gaussian); sample.Settings.SetDefine(MagickFormat.Png,"compression-level","1"); sample.Write(benchmark); }
