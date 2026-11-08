@@ -17,5 +17,6 @@ Get-ChildItem -LiteralPath $target -Directory | Where-Object { $_.Name -match '^
     if($files.Count -gt 0 -and @($files | Where-Object { $_.Extension -ne '.mui' }).Count -eq 0) { $removed += $_.Name+'/ (MUI only)'; Remove-Item -LiteralPath $_.FullName -Recurse }
 }
 foreach($required in @('AxoVisuals.exe','AxoVisuals.pri','Microsoft.UI.Xaml.dll','coreclr.dll','onnxruntime.dll','Magick.Native-Q8-x64.dll','models/u2net.onnx')) { if(-not(Test-Path -LiteralPath (Join-Path $target $required))) { throw "Missing runtime dependency: $required" } }
+New-Item -ItemType Directory -Path (Join-Path $projectRoot 'artifacts/verification') -Force | Out-Null
 $removed | Set-Content (Join-Path $projectRoot 'artifacts/verification/release-cleanup.txt')
 Write-Output "Audited cleanup: $($removed.Count) entries removed. Runtime DLLs, PRI files, licenses and model retained."

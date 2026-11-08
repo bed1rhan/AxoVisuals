@@ -15,7 +15,7 @@ Reviewed 2026-09-17. Runtime packages are pinned in project files; package lock 
 
 Magick.NET's Apache license does **not** cover every native codec. The exact NuGet package supplies `Notice.txt`; the complete, unmodified file is included as `licenses/MagickNET-NOTICE.txt`. It includes LGPL libraries such as libheif 1.23.1 and libde265 1.1.1, as well as other third-party notices. These licenses permit open-source redistribution subject to their notices, corresponding-source and relinking requirements; native libraries are distributed as replaceable files, not hidden inside an obfuscated or single-file executable.
 
-This delivery is for local use, not a published third-party binary release. Before an external binary release, provide the matching native dependency source/build materials alongside the binary distribution and retain the LGPL replacement/relinking rights. Codec patent rights are distinct from copyright licenses; no claim of worldwide patent clearance is made. HEVC encoding is not enabled or offered. The project has not been published and no license has been assigned to the user's own source code on their behalf.
+The portable release keeps native dependencies as replaceable files, includes the complete package notices, and is accompanied by the AxoVisuals source repository. Codec patent rights are distinct from copyright licenses; no claim of worldwide patent clearance is made. HEVC encoding is not enabled or offered.
 
 Source provenance: Magick.NET 14.16.0 package repository commit `474ebe6f28152415426a1791f6cc3b76c8067a39`. The package notices identify ImageMagick 7.1.2-29 and individual native dependency versions. See https://github.com/dlemstra/Magick.NET/releases/tag/14.16.0 and https://github.com/dlemstra/Magick.Native for corresponding native build sources.
 
@@ -29,7 +29,7 @@ Alternatives considered: ImageSharp has additional licensing conditions for some
 - Upstream reference checksum: MD5 `60024c5c889badc19c04ad937298a77b`
 - Verified SHA-256: `8d10d2f3bb75ae3b6d527c77944fc5e7dcd94b29809d47a739a7a728a912b491`
 - Input: 1×3×320×320 RGB, ImageNet channel normalization after max-pixel scaling; first saliency output, min/max normalized, Lanczos resized.
-- Inference and model loading contain no downloader. A missing or changed model produces a local error. `scripts/fetch-model.ps1` is a separate, explicit development utility only.
+- Apache-2.0 permits redistribution of the model with its license and notices. The portable ZIP bundles the verified model and `licenses/U-2-Net-LICENSE.txt`; its SHA-256 is checked during packaging. Inference and model loading contain no downloader. A missing or changed model produces a local error. `scripts/fetch-model.ps1` is a separate, explicit development utility only.
 
 BRIA/RMBG variants were not selected because model weight conditions vary and may impose noncommercial restrictions. Larger transformer models were not necessary for this utility's CPU/memory target.
 
