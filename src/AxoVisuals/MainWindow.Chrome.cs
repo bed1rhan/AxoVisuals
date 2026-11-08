@@ -47,5 +47,14 @@ public sealed partial class MainWindow
         if(Microsoft.UI.Xaml.Input.FocusManager.GetFocusedElement(Root.XamlRoot) is Microsoft.UI.Xaml.Controls.TextBox) return;
         args.Handled=true; if(model.CanRedo) await RunAsync(()=>ChangeHistoryAsync(true));
     }
+    private async void BeforePressed(object sender, PointerRoutedEventArgs args)
+    {
+        if(model.Document == null || busy) return;
+        await RunAsync(async () => await DisplayBytesAsync(await Task.Run(model.Document.Preview)));
+    }
+    private async void BeforeReleased(object sender, PointerRoutedEventArgs args)
+    {
+        if(model.Document != null && !busy) await ShowPreviewAsync();
+    }
 }
 

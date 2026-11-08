@@ -5,6 +5,7 @@ using ImageMagick;
 using System.Diagnostics;
 internal static class RevisionTests
 {
+    private sealed record UnsupportedEdit : ImageEdit;
     private static void Check(bool condition,string message) { if(!condition) throw new Exception(message); }
     public static async Task RunAsync(string path,string root)
     {
@@ -56,6 +57,28 @@ internal static class RevisionTests
             catch(InvalidOperationException exception) when(exception.Message.Contains("bundled background model is missing",StringComparison.Ordinal)) { }
         }
         Console.WriteLine("PASS: missing background model reports a recoverable local error");
+        using(var orderedHistory = new WorkspaceViewModel())
+        {
+            await orderedHistory.OpenAsync(path);
+            await orderedHistory.ApplyAsync(new RotateEdit(90));
+            await orderedHistory.ApplyAsync(new ColorAdjustEdit(Brightness: 20, Saturation: 15));
+            await orderedHistory.ApplyAsync(new CropEdit(5, 5, 200, 300));
+            await orderedHistory.ApplyAsync(new FilterEdit(FilterPreset.Sepia));
+            Check(orderedHistory.Edits.Count == 4 && orderedHistory.Width == 200 && orderedHistory.Height == 300, "Ordered edit history");
+            for(var count = 3; count >= 0; count--) { await orderedHistory.UndoAsync(); Check(orderedHistory.Edits.Count == count, "Undo edit order"); }
+            for(var count = 1; count <= 4; count++) { await orderedHistory.RedoAsync(); Check(orderedHistory.Edits.Count == count, "Redo edit order"); }
+            await orderedHistory.UndoAsync(); await orderedHistory.ApplyAsync(new FilterEdit(FilterPreset.Cool)); Check(!orderedHistory.CanRedo, "New edit must clear redo history");
+        }
+        using(var sourceForEffects = ImageDocument.Open(path))
+        using(var effects = ImagePipeline.Render(sourceForEffects,[new ColorAdjustEdit(Brightness:20,Contrast:15,Temperature:20),new FilterEdit(FilterPreset.Vivid)]))
+        {
+            using var original = sourceForEffects.CloneOriginal();
+            Check(original.Compare(effects,ErrorMetric.Absolute) > 0, "Color adjustment and filter had no effect");
+            var target = ImagePipeline.EncodeToTarget(effects,new ExportOptions("JPEG"),64 * 1024);
+            Check(target.Bytes.Length <= 64 * 1024 && target.TargetReached, "Target-size compression failed");
+            try { ImagePipeline.Apply(effects,new UnsupportedEdit()); throw new Exception("Unsupported edit was silently ignored"); } catch(NotSupportedException) { }
+        }
+        Console.WriteLine("PASS: ordered undo/redo, color adjustments, filters, target-size compression and unsupported-edit rejection");
         // Same 6 MP textured pixels and command list for the old replay path and new cached path.
         var benchmark=Path.Combine(root,"benchmark.png");
         using(var sample=new MagickImage(MagickColors.Gray,3000,2000)) { sample.AddNoise(NoiseType.Gaussian); sample.Settings.SetDefine(MagickFormat.Png,"compression-level","1"); sample.Write(benchmark); }

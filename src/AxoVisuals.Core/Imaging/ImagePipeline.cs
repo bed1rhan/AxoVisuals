@@ -6,6 +6,9 @@ public sealed record ResizeEdit(uint Width, uint Height) : ImageEdit;
 public sealed record CropEdit(uint X, uint Y, uint Width, uint Height) : ImageEdit;
 public sealed record RotateEdit(int Degrees) : ImageEdit;
 public sealed record FlipEdit(bool Horizontal) : ImageEdit;
+public sealed record ColorAdjustEdit(double Brightness = 0, double Contrast = 0, double Saturation = 0, double Exposure = 0, double Temperature = 0, double Tint = 0, double Highlights = 0, double Shadows = 0) : ImageEdit;
+public enum FilterPreset { Grayscale, Sepia, BlackAndWhite, Vintage, Warm, Cool, Vivid }
+public sealed record FilterEdit(FilterPreset Preset) : ImageEdit;
 public enum MetadataPolicy { Keep, PrivacyClean, RemoveGps, RemoveAll }
 public sealed record ExportOptions(string Format = "PNG", uint Quality = 85, MetadataPolicy Metadata = MetadataPolicy.PrivacyClean, AxoVisuals.Core.Metadata.MetadataFields? Fields = null);
 public sealed record FormatOption(string Name, string Extension, MagickFormat Format, bool HasQuality);
@@ -49,7 +52,39 @@ public static class ImagePipeline
                         image.Crop(new MagickGeometry((int)c.X, (int)c.Y, c.Width, c.Height)); image.ResetPage(); break;
                     case RotateEdit r: image.Rotate(r.Degrees); image.ResetPage(); break;
                     case FlipEdit f: if(f.Horizontal) image.Flop(); else image.Flip(); break;
+                    case ColorAdjustEdit a: ApplyAdjustments(image, a); break;
+                    case FilterEdit f: ApplyFilter(image, f.Preset); break;
+                    default: throw new NotSupportedException($"The image edit '{edit.GetType().Name}' is not supported.");
                 }
+    }
+    private static void ApplyAdjustments(MagickImage image, ColorAdjustEdit adjust)
+    {
+        if (adjust.Brightness != 0 || adjust.Contrast != 0) image.BrightnessContrast(new Percentage(Math.Clamp(adjust.Brightness, -100, 100)), new Percentage(Math.Clamp(adjust.Contrast, -100, 100)));
+        var exposure = Math.Pow(2, Math.Clamp(adjust.Exposure, -4, 4)) * 100;
+        var saturation = Math.Clamp(100 + adjust.Saturation, 0, 200);
+        var hue = Math.Clamp(100 + adjust.Tint, 0, 200);
+        if (exposure != 100 || saturation != 100 || hue != 100) image.Modulate(new Percentage(exposure), new Percentage(saturation), new Percentage(hue));
+        if (adjust.Highlights != 0) image.BrightnessContrast(new Percentage(adjust.Highlights / 4), new Percentage(adjust.Highlights / 4));
+        if (adjust.Shadows != 0) image.BrightnessContrast(new Percentage(adjust.Shadows / 3), new Percentage(0));
+        if (adjust.Temperature != 0)
+        {
+            var color = adjust.Temperature > 0 ? new MagickColor("#FFB36B") : new MagickColor("#78B7FF");
+            image.Colorize(color, new Percentage(Math.Min(Math.Abs(adjust.Temperature), 100) / 5));
+        }
+    }
+    private static void ApplyFilter(MagickImage image, FilterPreset preset)
+    {
+        switch (preset)
+        {
+            case FilterPreset.Grayscale: image.Grayscale(PixelIntensityMethod.Rec601Luma); break;
+            case FilterPreset.Sepia: image.SepiaTone(new Percentage(80)); break;
+            case FilterPreset.BlackAndWhite: image.Grayscale(PixelIntensityMethod.Rec601Luma); image.Threshold(new Percentage(50)); break;
+            case FilterPreset.Vintage: image.SepiaTone(new Percentage(65)); image.Modulate(new Percentage(95), new Percentage(78), new Percentage(95)); break;
+            case FilterPreset.Warm: image.Colorize(new MagickColor("#FFAB5C"), new Percentage(12)); break;
+            case FilterPreset.Cool: image.Colorize(new MagickColor("#77B8FF"), new Percentage(12)); break;
+            case FilterPreset.Vivid: image.Modulate(new Percentage(105), new Percentage(135), new Percentage(100)); break;
+            default: throw new NotSupportedException($"The filter '{preset}' is not supported.");
+        }
     }
     public static void ValidateSize(uint width, uint height)
     {
@@ -70,6 +105,25 @@ public static class ImagePipeline
             image.Alpha(AlphaOption.Remove);
         }
         return image.ToByteArray(format.Format);
+    }
+    public static (byte[] Bytes, uint Quality, bool TargetReached) EncodeToTarget(MagickImage image, ExportOptions options, long targetBytes)
+    {
+        var format = Formats.FirstOrDefault(f => f.Name == options.Format) ?? throw new NotSupportedException("This encoder is unavailable.");
+        if (!format.HasQuality) throw new InvalidOperationException("Target file size is available for JPEG, WebP, and AVIF only.");
+        if (targetBytes < 1024) throw new InvalidOperationException("Choose a target size of at least 1 KB.");
+        byte[]? best = null; uint bestQuality = 1;
+        var low = 1; var high = 100;
+        while (low <= high)
+        {
+            var quality = (uint)((low + high) / 2);
+            using var candidate = (MagickImage)image.Clone();
+            var bytes = Encode(candidate, options with { Quality = quality });
+            if (bytes.Length <= targetBytes) { best = bytes; bestQuality = quality; low = (int)quality + 1; }
+            else high = (int)quality - 1;
+        }
+        if (best != null) return (best, bestQuality, true);
+        using var minimum = (MagickImage)image.Clone();
+        return (Encode(minimum, options with { Quality = 1 }), 1, false);
     }
     public static async Task ExportAsync(ImageDocument document, IReadOnlyList<ImageEdit> edits, ExportOptions options, string destination, CancellationToken token = default)
     {
